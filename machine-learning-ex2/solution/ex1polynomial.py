@@ -53,10 +53,6 @@ def predict(x):
     global theta
     probability = np.asscalar(sigmoid(np.dot(x.T,theta)))
     return probability
-    if(probability >= 0.5):
-        return 1
-    else:
-        return 0
 
 ### Read train data
 train_data = pd.read_csv("ex2data1.csv", names = ["exam1", "exam2", "admit"])
