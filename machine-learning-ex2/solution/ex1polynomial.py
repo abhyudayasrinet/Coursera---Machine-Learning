@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set(style="white")
 
 def map_features(x, degree):
     x_old = x.copy()
@@ -8,39 +10,34 @@ def map_features(x, degree):
     column_index = 1
     for i in range(1, degree+1):
         for j in range(0, i+1):
-            x.insert(column_index, x_old.columns[1] + "^" + str(i-j) + x_old.columns[2] + "^" + str(j), np.multiply(x_old.iloc[:,1]**(i-j), x_old.iloc[:,2]**(j)))
+            x.insert(column_index, str(x_old.columns[1]) + "^" + str(i-j) + str(x_old.columns[2]) + "^" + str(j), np.multiply(x_old.iloc[:,1]**(i-j), x_old.iloc[:,2]**(j)))
             column_index+=1
     return x
 
 def normalize_features(x):
+    global mean_values
+    global std_values
     for column_name in x.columns[1:]:
         mean = x[column_name].mean()
         std = x[column_name].std()
         x[column_name] = (x[column_name] - mean) / std
+        mean_values[column_name] = mean
+        std_values[column_name] = std
     return x
 
 def sigmoid(z):
-    # print(z)
     return 1/(1+np.exp(-z))
-
-def predict(x):
-    global theta
-    probability = np.asscalar(sigmoid(np.dot(x,theta)))
-    if(probability >= 0.5):
-        return 1
-    else:
-        return 0
 
 def cost(x, y, theta):
     m = x.shape[0]
     h_theta = pd.DataFrame(sigmoid(np.dot(x,theta)))
     cost = 1/m * ((-np.multiply(y,h_theta.apply(np.log)) - np.multiply(1-y, (1-h_theta).apply(np.log))).sum())
-    return cost
+    return np.asscalar(cost)
 
 def gradient_descent(x, y, theta):
     global cost_values
     m = x.shape[0]
-    iterations = 2500
+    iterations = 1000
     alpha = 0.03
     cost_values = pd.DataFrame({'iteration' : [0], 'cost' : [cost(x,y,theta)]})
 
@@ -52,51 +49,83 @@ def gradient_descent(x, y, theta):
         c = cost(x,y,theta)
         cost_values = cost_values.append({"iteration" : iteration, "cost" : c}, ignore_index=True)
 
+def predict(x):
+    global theta
+    probability = np.asscalar(sigmoid(np.dot(x.T,theta)))
+    return probability
+    if(probability >= 0.5):
+        return 1
+    else:
+        return 0
 
 ### Read train data
 train_data = pd.read_csv("ex2data1.csv", names = ["exam1", "exam2", "admit"])
 
-### Add intercept column
-train_data.insert(0, "intercept", 1)
-
 ### Create input data
-x = train_data.loc[:,"intercept":"exam2"]
-# print(x.head())
-x = map_features(x, 2) #map polynomial features
-# print(x.head())
+x = train_data.loc[:,"exam1":"exam2"]
+### Add intercept column
+x.insert(0, "intercept", 1)
+mean_values = {}
+std_values = {}
+mapping_degree = 2
 x = normalize_features(x) #normalize features
-# print(x.head())
+x = map_features(x, mapping_degree) #map polynomial features
 y = pd.DataFrame(train_data.loc[:,"admit"])
 theta = pd.DataFrame({"theta" : [0] * len(x.columns)})
 
 ### Test cost of initial theta
-# print(x.shape)
-# print(theta.shape)
-# print(np.dot(x,theta))
 # print(cost(x,y,theta))
 
 ### Perform Gradient Descent
 gradient_descent(x, y, theta)
 # print(theta)
-# print(cost(x,y,theta))
+# print("Cost: " + str(cost(x,y,theta)))
 
 ### Plot iteration vs Cost
 plt.scatter(cost_values["iteration"], cost_values["cost"])
 plt.show()
 
+### Predict an example
+student = pd.DataFrame({"exam1": [52], "exam2":[63]})
+student.insert(0, "intercept", 1)
+#normalizing
+for column_name in student.columns[1:]:
+    student[column_name] = (student[column_name] - mean_values[column_name]) / std_values[column_name]
+student = map_features(student, mapping_degree)
+print("probability of admission: " + str(predict(student.T)))
+
 ### Calculate Accuracy
 acc = 0
 for i in range(0,x.shape[0]):
-    p = predict(x.iloc[i,:])
+    p = predict(pd.DataFrame(x.iloc[i,:]))
     actual = y.iloc[i,0]
+    if(p >= 0.5):
+        p = 1
+    else:
+        p = 0
     if(p == actual):
         acc+=1
-print((acc/x.shape[0]) * 100)
+print("Accuracy : " + str((acc/x.shape[0]) * 100))
 
-### Plot Decision Boundary
-x = np.array(range(42,51))
-y = hypothesis(x)
+### Plot decision boundary
+x_min = train_data["exam1"].min()
+x_max = train_data["exam1"].max()
+y_min = train_data["exam2"].min()
+y_max = train_data["exam2"].max()
+x_grid, y_grid = np.meshgrid(np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1))
+xx = pd.DataFrame(x_grid.ravel(), columns=["exam1"])
+yy = pd.DataFrame(y_grid.ravel(), columns=["exam2"])
+z = pd.DataFrame({"intercept" : [1]*xx.shape[0]})
+z["exam1"] = xx
+z["exam2"] = yy
+z = normalize_features(z)
+z = map_features(z,mapping_degree)
+p = z.apply(lambda row: predict(pd.DataFrame(row)), axis=1)
+p = np.array(p.values)
+p = p.reshape(x_grid.shape)
 plt.scatter(train_data[train_data["admit"] == 0]["exam1"], train_data[train_data["admit"] == 0]["exam2"],marker="o")
 plt.scatter(train_data[train_data["admit"] == 1]["exam1"], train_data[train_data["admit"] == 1]["exam2"],marker="x")
-plt.plot(x,y)
+plt.contour(x_grid, y_grid, p, levels = [0.5])
+# plt.contour(x_grid, y_grid, p, 50, cmap="RdBu")
+# plt.colorbar()
 plt.show()
