@@ -38,8 +38,6 @@ def hypothesis(x):
     global theta
     return (0.5 - theta.iloc[0,0] - theta.iloc[1,0]*x)/theta.iloc[2,0]
 
-# 18664777532
-
 train_data = pd.read_csv("ex2data1.csv", names=["exam1","exam2","admit"])
 train_data.insert(0, "intercept", 1)
 

@@ -80,6 +80,7 @@ gradient_descent(x, y, theta)
 ### Plot iteration vs Cost
 plt.scatter(cost_values["iteration"], cost_values["cost"])
 plt.show()
+print("Cost: " + str(cost(x,y,theta)))
 
 ### Predict an example
 student = pd.DataFrame({"exam1": [52], "exam2":[63]})
