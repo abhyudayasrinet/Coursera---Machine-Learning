@@ -34,14 +34,16 @@ def gradient_descent(x, y, theta, lmda):
 
 def predict(x, theta, k):
     probability = sigmoid(np.dot(x.T,theta))
-    p = (probability >= 0.5).astype(np.int)
-    for i in range(k):
-        if(p[i] == 1):
-            if(i == 0):
-                return 10
-            else:
-                return i
-    return -1
+    m = probability[0]
+    m_i = 0
+    for i,p in enumerate(probability):
+        if(p>m):
+            m = p
+            m_i = i
+    if(m_i == 0):
+        return 10
+    else:
+        return m_i
 
 ### Load data
 column_names = [str(i) for i in range(1,401)]
@@ -68,22 +70,22 @@ for i in range(1,k):
 # print("Initial cost: " + str(cost(x,y,theta, lmda)))
 
 ### Perform Gradient Descent
-for i in range(0,k):
-    if(i==0):
-        label = 10
-    else:
-        label = i
-    print("Training for " + str(i))
-    tmp_y = (y == label).astype(np.int)
-    theta.iloc[:,i] = gradient_descent(x, tmp_y, pd.DataFrame(theta.iloc[:,i]), lmda)
+# for i in range(0,k):
+#     if(i==0):
+#         label = 10
+#     else:
+#         label = i
+#     print("Training for " + str(i))
+#     tmp_y = (y == label).astype(np.int)
+#     theta.iloc[:,i] = gradient_descent(x, tmp_y, pd.DataFrame(theta.iloc[:,i]), lmda)
 
     ### Plot iteration vs Cost
     # plt.scatter(cost_values["iteration"], cost_values["cost"])
     # plt.show()
 
 ### Write trained theta to csv
-# theta = pd.read_csv("theta.csv") #Reuse a trained theta
-theta.to_csv("theta.csv", index=False)
+theta = pd.read_csv("theta.csv") #Reuse a trained theta
+# theta.to_csv("theta.csv", index=False)
 
 ### Predict samples
 # samples = [0, 536, 1378, 1873, 2303, 2784, 3361, 3812, 4374, 4871] #one sample for each class for testing
