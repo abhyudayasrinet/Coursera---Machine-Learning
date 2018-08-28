@@ -34,12 +34,8 @@ def gradient_descent(x, y, theta, lmda):
 
 def predict(x, theta, k):
     probability = sigmoid(np.dot(x.T,theta))
-    m = probability[0]
-    m_i = 0
-    for i,p in enumerate(probability):
-        if(p>m):
-            m = p
-            m_i = i
+    m = probability.max()
+    m_i = probability.tolist().index(m)
     if(m_i == 0):
         return 10
     else:
